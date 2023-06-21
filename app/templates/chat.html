@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %} Chat {% endblock %}
+
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static', filename='chat_style.css') }}">
+{% endblock %}
+
+
+{% block nav %}
+<div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav">
+        <li class="nav-item">
+            <a class="nav-link" aria-current="page" href="{{ url_for('main.home')}}">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+        </li>
+    </ul>
+
+</div>
+{% endblock %}
+
+
+
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+    integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+    crossorigin="anonymous"></script>
+
+<div class="text-center">
+    <h2 class="m-3">You're logged as <b>{{current_user.username}}</b> and your room id is: <b>{{session["room_id"]}}</b>
+    </h2>
+</div>
+
+<div class="container" style="max-width: 50rem;">
+
+    <div class="chatbox" id="chatbox">
+        {% for message in messages %}
+        <div class="message">
+            <span class="username">{{ message.user }}: </span>
+            <span class="content">{{ message.message }}</span>
+            <span class="date">{{ message.date.strftime("%d.%m.%Y, %H:%M:%S") }}</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <form class="input-container" onsubmit="event.preventDefault(); sendMessage()">
+        <div class="input-group">
+            <input type="text" id="message-input" class="form-control" placeholder="Type your message..." autofocus>
+            <button id="send-message-btn" class="btn btn-primary" type="submit">Send</button>
+        </div>
+    </form>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+
+    const socket = io();
+    const chatbox = document.getElementById("chatbox");
+
+    const addMessage = (user, message) => {
+        const content = `
+        <div class="message">
+            <span class="username">${user}: </span>
+            <span class="content">${message}</span>
+            <span class="date">${new Date().toLocaleString()}</span>
+        </div>
+
+        `
+        chatbox.innerHTML = content + chatbox.innerHTML
+    }
+
+    socket.on("message", (data) => {
+        addMessage(data.user, data.message)
+    })
+
+
+    const sendMessage = () => {
+        const message = document.getElementById("message-input");
+        if (message.value.length === 0) {
+            return;
+        }
+        socket.emit("message", { data: message.value });
+        message.value = "";
+    }
+
+</script>
+
+
+
+
+{% endblock %}

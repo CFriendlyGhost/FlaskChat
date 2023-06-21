@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+
+{% block title %} Login {% endblock %}
+
+
+
+{% block nav %}
+<div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav">
+        <li class="nav-item">
+            <a class="nav-link disabled" aria-current="page" href="#">Home</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link disabled active" href="{{ url_for('auth.login') }}">Login</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ url_for('auth.signup' )}}">Register</a>
+        </li>
+    </ul>
+</div>
+{% endblock %}
+
+
+{% block content %}
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+
+{% for category, message in messages %}
+<div class="container" style="max-width: 40rem;">
+    {% if category == "message" %}
+    <div class="alert alert-danger mt-2" role="alert">{{ message }}</div>
+    {% else %}
+    <div class="alert alert-{{ category }} mt-2" role="alert">{{ message }}</div>
+    {% endif %}
+</div>
+{% endfor %}
+
+{% endif %}
+{% endwith %}
+
+
+
+
+<div class="text-center">
+    <h2 class="mb-3 p-5">Login to start chatting!</h2>
+</div>
+
+<form method="post" class="container-fluid" style="max-width: 35rem;">
+
+    <!-- login -->
+    <div class="form-outline mb-4 bg-light">
+        <input type="text" id="username" name="username" class="form-control" required />
+        <label class="form-label" for="username">Login</label>
+    </div>
+
+    <!-- password -->
+    <div class="form-outline mb-4 bg-light">
+        <input type="password" id="password" name="password" class="form-control" required />
+        <label class="form-label" for="password">Password</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-block mb-4">Sign in</button>
+
+    <div class="text-center">
+        <p>Not a member? <a href="{{ url_for('auth.signup' ) }}">Register</a></p>
+    </div>
+</form>
+
+{% endblock %}
