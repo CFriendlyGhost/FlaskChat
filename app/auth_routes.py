@@ -30,7 +30,6 @@ def login_post():
     if not existing_user or not check_password_hash(existing_user.password, password):
         flash("Login details are incorrect.", "danger")
         return redirect(url_for("auth.login"))
-    print(user)
     # if not database_inquiries.check_user_token_confirmation(user):
     #     flash("You need to confirm your account first.", "warning")
     #     return redirect(url_for("auth.login"))
