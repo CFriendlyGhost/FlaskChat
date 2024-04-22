@@ -48,7 +48,6 @@ def load_message(room_data, user_data, message_data, message_time):
     try:
         room = Room.query.filter_by(room_code=room_data).first()
         user = User.query.filter_by(username=user_data).first()
-
         if room is not None and user is not None:
             message = Message(
                 content=message_data,

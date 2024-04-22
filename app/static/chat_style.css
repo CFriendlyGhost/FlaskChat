@@ -1,5 +1,5 @@
 .chatbox {
-    background-color: white;
+    background-color: #ffffff;
     border: 2px solid #ccc;
     height: 60vh;
     padding: 0.5rem 2rem;
@@ -12,7 +12,43 @@
 }
 
 .message {
-    margin-bottom: 10px;
+    width: 55%;
+    margin-top: 5px;
+}
+
+.media_message {
+    width: 100%;
+}
+
+.message_body {
+    border-radius: 15px;
+    padding: 10px 20px;
+}
+
+.content {
+    word-wrap: break-word;
+}
+
+.username_container {
+    padding: 3px 0;
+}
+
+.message_body_right {
+    background: #666666;
+    color: white;
+}
+
+.message_body_left {
+    background: #e8e4e4;
+    color: black;
+}
+
+.message_right {
+    margin-left: auto;
+}
+
+.message_left {
+    margin-right: auto;
 }
 
 .username {
@@ -20,7 +56,15 @@
 }
 
 .date {
-    float: right;
     color: gray;
     font-style: italic;
+    padding: 0 10px;
+}
+
+.date_right {
+    float: right;
+}
+
+.date_left {
+    float: left;
 }
