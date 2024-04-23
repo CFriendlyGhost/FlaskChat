@@ -56,3 +56,31 @@ def handle_message(data):
         message_data=message["message"],
         message_time=dt.datetime.now(),
     )
+
+
+@socketio.on("typing")
+def handle_typing():
+    room = session.get("room_id")
+    username = current_user.username
+
+    typing_username = username
+    emit(
+        "typing",
+        typing_username,
+        broadcast=30,
+        to=room,
+    )
+
+
+@socketio.on("stop_typing")
+def handle_typing():
+    room = session.get("room_id")
+    username = current_user.username
+
+    typing_username = username
+    emit(
+        "stop_typing",
+        typing_username,
+        broadcast=30,
+        to=room,
+    )

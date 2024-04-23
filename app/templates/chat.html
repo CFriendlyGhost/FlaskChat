@@ -37,10 +37,19 @@
 
     <div class="chatbox" id="chatbox">
         {% for message in messages %}
-        <div class="message">
-            <span class="username">{{ message.user }}: </span>
-            <span class="content">{{ message.message }}</span>
-            <span class="date">{{ message.date.strftime("%d.%m.%Y, %H:%M:%S") }}</span>
+        <div class="message message_{{ 'right' if current_user.username == message.user else 'left' }}">
+            <div class="message_body message_body_{{ 'right' if current_user.username == message.user else 'left' }}">
+                <div class='username_container'>
+                    <span class="username">{{ message.user }}</span>
+                </div>
+                <div class="content">
+                    {{ message.message }}
+{#                    <img src="../static/restaurant_design.jpg" class="media_message">#}
+                </div>
+            </div>
+            <div class="date date_{{ 'right' if current_user.username == message.user else 'left' }}">
+                {{ message.date.strftime("%d.%m.%Y, %H:%M:%S") }}
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -57,22 +66,81 @@
 
     const socket = io();
     const chatbox = document.getElementById("chatbox");
+    const inputField = document.getElementById("message-input");
+
+    let typingNotified = false;
+
+
+    inputField.addEventListener("input", (e) => {
+        const val = e.target.value
+        if (val.length  > 0 && !typingNotified) {
+            socket.emit("typing")
+            typingNotified = true
+        } else if (val.length === 0 && typingNotified) {
+            socket.emit("stop_typing")
+            typingNotified = false
+        }
+    });
 
     const addMessage = (user, message) => {
+        const current_user_username = "{{ current_user.username }}"
         const content = `
-        <div class="message">
-            <span class="username">${user}: </span>
-            <span class="content">${message}</span>
-            <span class="date">${new Date().toLocaleString()}</span>
+        <div class="message message_${current_user_username == user ? 'right' : 'left'}">
+            <div class="message_body message_body_${current_user_username == user ? 'right' : 'left'}">
+                <div class='username_container'>
+                    <span class="username">${user} </span>
+                </div>
+                <div class="content">
+                    ${message}
+                </div>
+            </div>
+            <div class="date date_${current_user_username == user ? 'right' : 'left'}">${new Date().toLocaleString()}</div>
         </div>
-
         `
         chatbox.innerHTML = content + chatbox.innerHTML
     }
 
+
+    const addTypingMessage = (user) => {
+        const current_user_username = "{{ current_user.username }}"
+        const content = `
+        <div class="message message_${current_user_username == user ? 'right' : 'left'}" id="typing_${user}">
+            <div class="message_body message_body_${current_user_username == user ? 'right' : 'left'}">
+                <div class="content">
+                    ${user} is typing ...
+                </div>
+            </div>
+        </div>
+        `
+        chatbox.innerHTML = content + chatbox.innerHTML
+    }
+
+    const deleteTypingMessage = (user) => {
+        const id = "typing_"+user;
+        const typing_message = document.getElementById(id);
+        if (typing_message) {
+            chatbox.removeChild(typing_message);
+        }
+
+    }
+
     socket.on("message", (data) => {
+        deleteTypingMessage(data.user)
+        typingNotified = false
         addMessage(data.user, data.message)
     })
+
+    socket.on("typing", (user) => {
+        if (user !== "{{current_user.username}}") {
+            addTypingMessage(user)
+        }
+    });
+
+    socket.on("stop_typing", (user) => {
+        if (user !== "{{current_user.username}}") {
+            deleteTypingMessage(user)
+        }
+    });
 
 
     const sendMessage = () => {
@@ -83,8 +151,8 @@
         socket.emit("message", { data: message.value });
         message.value = "";
     }
-
 </script>
+
 
 
 
