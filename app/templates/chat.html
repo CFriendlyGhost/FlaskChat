@@ -67,6 +67,7 @@
     const socket = io();
     const chatbox = document.getElementById("chatbox");
     const inputField = document.getElementById("message-input");
+    const typing_people = []
 
     let typingNotified = false;
 
@@ -82,46 +83,84 @@
         }
     });
 
+
     const addMessage = (user, message) => {
         const current_user_username = "{{ current_user.username }}"
+        const message_wrapper_node = document.createElement("div")
+        message_wrapper_node.className += "message";
+        let direction;
+        if (current_user_username == user) {
+            direction = "right";
+        } else {
+            direction = "left";
+        }
+        message_wrapper_node.className += " message_" + direction;
         const content = `
-        <div class="message message_${current_user_username == user ? 'right' : 'left'}">
-            <div class="message_body message_body_${current_user_username == user ? 'right' : 'left'}">
-                <div class='username_container'>
-                    <span class="username">${user} </span>
-                </div>
-                <div class="content">
-                    ${message}
-                </div>
+        <div class="message_body message_body_${direction}">
+            <div class='username_container'>
+                <span class="username">${user} </span>
             </div>
-            <div class="date date_${current_user_username == user ? 'right' : 'left'}">${new Date().toLocaleString()}</div>
+            <div class="content">
+                ${message}
+            </div>
         </div>
+        <div class="date date_${direction}">${new Date().toLocaleString()}</div>
         `
-        chatbox.innerHTML = content + chatbox.innerHTML
+        message_wrapper_node.innerHTML = content;
+        const typing_elements = document.getElementsByClassName("typing");
+        if (typing_elements.length > 0) {
+            const target = typing_elements[typing_elements.length - 1];
+            target.insertAdjacentElement('afterend', message_wrapper_node);
+        } else {
+            chatbox.prepend(message_wrapper_node);
+        }
     }
 
+    const updateTypingPeople = () => {
+        const typing_people_el = document.getElementById("typing_people");
+        let msg = "";
+        if (typing_people.length < 4) {
+            for (let i = 0; i < typing_people.length; i++) {
+                msg += typing_people[i] + ", ";
+            }
+            msg = msg.slice(0, -2);
+        } else {
+            msg = typing_people.length;
+        }
+        typing_people_el.innerHTML = msg + " are typing ...";
+    }
 
     const addTypingMessage = (user) => {
         const current_user_username = "{{ current_user.username }}"
-        const content = `
-        <div class="message message_${current_user_username == user ? 'right' : 'left'}" id="typing_${user}">
-            <div class="message_body message_body_${current_user_username == user ? 'right' : 'left'}">
-                <div class="content">
-                    ${user} is typing ...
+        const typing_msg_ref = document.getElementById("typing");
+        typing_people.push(user)
+        if (!typing_msg_ref) {
+            const content = `
+            <div class="message typing message_${current_user_username == user ? 'right' : 'left'}" id="typing">
+                <div class="message_body message_body_${current_user_username == user ? 'right' : 'left'}">
+                    <div class="content" id="typing_people">
+                        ${user} is typing ...
+                    </div>
                 </div>
             </div>
-        </div>
-        `
-        chatbox.innerHTML = content + chatbox.innerHTML
+            `
+            chatbox.innerHTML = content + chatbox.innerHTML;
+        } else {
+            updateTypingPeople()
+        }
     }
 
     const deleteTypingMessage = (user) => {
-        const id = "typing_"+user;
-        const typing_message = document.getElementById(id);
-        if (typing_message) {
-            chatbox.removeChild(typing_message);
+        const index = typing_people.indexOf(user);
+        typing_people.splice(index, 1);
+        if (typing_people.length === 0) {
+            const typingMessage = document.getElementById("typing");
+            if (typingMessage) {
+                chatbox.removeChild(typingMessage);
+            }
+        } else {
+            updateTypingPeople()
         }
-
     }
 
     socket.on("message", (data) => {
