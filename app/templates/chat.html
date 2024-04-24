@@ -36,27 +36,31 @@
 <div class="container" style="max-width: 50rem;">
 
     <div class="chatbox" id="chatbox">
-        {% for message in messages %}
-        <div class="message message_{{ 'right' if current_user.username == message.user else 'left' }}">
-            <div class="message_body message_body_{{ 'right' if current_user.username == message.user else 'left' }}">
-                <div class='username_container'>
-                    <span class="username">{{ message.user }}</span>
-                </div>
-                <div class="content">
-                    {{ message.message }}
-{#                    <img src="../static/restaurant_design.jpg" class="media_message">#}
-                </div>
+    {% for message in messages %}
+    <div class="message message_{{ 'right' if current_user.username == message.user else 'left' }}">
+        <div class="message_body message_body_{{ 'right' if current_user.username == message.user else 'left' }}">
+            <div class='username_container'>
+                <span class="username">{{ message.user }}</span>
             </div>
-            <div class="date date_{{ 'right' if current_user.username == message.user else 'left' }}">
-                {{ message.date.strftime("%d.%m.%Y, %H:%M:%S") }}
+            <div class="content">
+                {% if message.message.startswith('https://photoschat') %}
+                    <img src="{{ message.message }}" alt="logo">
+                {% else %}
+                    {{ message.message }}
+                {% endif %}
             </div>
         </div>
-        {% endfor %}
+        <div class="date date_{{ 'right' if current_user.username == message.user else 'left' }}">
+            {{ message.date.strftime("%d.%m.%Y, %H:%M:%S") }}
+        </div>
     </div>
+    {% endfor %}
+</div>
 
     <form class="input-container" onsubmit="event.preventDefault(); sendMessage()">
         <div class="input-group">
             <input type="text" id="message-input" class="form-control" placeholder="Type your message..." autofocus>
+            <input type="file" id="image-input" class="form-control" accept="image/*">
             <button id="send-message-btn" class="btn btn-primary" type="submit">Send</button>
         </div>
     </form>
@@ -66,37 +70,144 @@
 
     const socket = io();
     const chatbox = document.getElementById("chatbox");
+    const inputField = document.getElementById("message-input");
+    const typing_people = []
+    let typingNotified = false;
+
+    inputField.addEventListener("input", (e) => {
+        const val = e.target.value
+        if (val.length  > 0 && !typingNotified) {
+            socket.emit("typing")
+            typingNotified = true
+        } else if (val.length === 0 && typingNotified) {
+            socket.emit("stop_typing")
+            typingNotified = false
+        }
+    });
 
     const addMessage = (user, message) => {
         const current_user_username = "{{ current_user.username }}"
+
+        if (message.startsWith("https://photoschat")) {
+            const imgHTML = `<img src="${message}" alt="logo">`;
+            message = imgHTML;
+        }
+        const message_wrapper_node = document.createElement("div")
+        message_wrapper_node.className += "message";
+        let direction;
+        if (current_user_username == user) {
+            direction = "right";
+        } else {
+            direction = "left";
+        }
+        message_wrapper_node.className += " message_" + direction;
         const content = `
-        <div class="message message_${current_user_username == user ? 'right' : 'left'}">
-            <div class="message_body message_body_${current_user_username == user ? 'right' : 'left'}">
-                <div class='username_container'>
-                    <span class="username">${user} </span>
-                </div>
-                <div class="content">
-                    ${message}
+        <div class="message_body message_body_${direction}">
+            <div class='username_container'>
+                <span class="username">${user} </span>
+            </div>
+            <div class="content">
+                ${message}
+            </div>
+        </div>
+        <div class="date date_${direction}">${new Date().toLocaleString()}</div>
+        `
+        message_wrapper_node.innerHTML = content;
+        const typing_elements = document.getElementsByClassName("typing");
+        if (typing_elements.length > 0) {
+            const target = typing_elements[typing_elements.length - 1];
+            target.insertAdjacentElement('afterend', message_wrapper_node);
+        } else {
+            chatbox.prepend(message_wrapper_node);
+        }
+    }
+
+        const updateTypingPeople = () => {
+        const typing_people_el = document.getElementById("typing_people");
+        let msg = "";
+        if (typing_people.length < 4) {
+            for (let i = 0; i < typing_people.length; i++) {
+                msg += typing_people[i] + ", ";
+            }
+            msg = msg.slice(0, -2);
+        } else {
+            msg = typing_people.length;
+        }
+        typing_people_el.innerHTML = msg + " are typing ...";
+    }
+
+    const addTypingMessage = (user) => {
+        const current_user_username = "{{ current_user.username }}"
+        const typing_msg_ref = document.getElementById("typing");
+        typing_people.push(user)
+        if (!typing_msg_ref) {
+            const content = `
+            <div class="message typing message_${current_user_username == user ? 'right' : 'left'}" id="typing">
+                <div class="message_body message_body_${current_user_username == user ? 'right' : 'left'}">
+                    <div class="content" id="typing_people">
+                        ${user} is typing ...
+                    </div>
                 </div>
             </div>
-            <div class="date date_${current_user_username == user ? 'right' : 'left'}">${new Date().toLocaleString()}</div>
-        </div>
-        `
-        chatbox.innerHTML = content + chatbox.innerHTML
+            `
+            chatbox.innerHTML = content + chatbox.innerHTML;
+        } else {
+            updateTypingPeople()
+        }
+    }
+
+        const deleteTypingMessage = (user) => {
+        const index = typing_people.indexOf(user);
+        typing_people.splice(index, 1);
+        if (typing_people.length === 0) {
+            const typingMessage = document.getElementById("typing");
+            if (typingMessage) {
+                chatbox.removeChild(typingMessage);
+            }
+        } else {
+            updateTypingPeople()
+        }
     }
 
     socket.on("message", (data) => {
+        deleteTypingMessage(data.user)
+        typingNotified = false
         addMessage(data.user, data.message)
     })
+
+     socket.on("typing", (user) => {
+        if (user !== "{{current_user.username}}") {
+            addTypingMessage(user)
+        }
+    });
+
+    socket.on("stop_typing", (user) => {
+        if (user !== "{{current_user.username}}") {
+            deleteTypingMessage(user)
+        }
+    });
+
 
 
     const sendMessage = () => {
         const message = document.getElementById("message-input");
-        if (message.value.length === 0) {
-            return;
+        const image = document.getElementById("image-input").files[0];
+        if (message.value.length !== 0) {
+            socket.emit("message", { data: message.value });
+            message.value = "";
         }
-        socket.emit("message", { data: message.value });
-        message.value = "";
+
+        if (image) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        socket.emit("image", { image: event.target.result });
+        document.getElementById("image-input").value = "";
+    };
+    reader.readAsDataURL(image);
+} else {
+    console.log("No file selected");
+}
+
     }
 
 </script>
