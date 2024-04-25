@@ -89,7 +89,7 @@
         const current_user_username = "{{ current_user.username }}"
 
         if (message.startsWith("https://photoschat")) {
-            const imgHTML = `<img src="${message}" alt="logo">`;
+            const imgHTML = `<img src="${message}" alt="logo" class="img_msg">`;
             message = imgHTML;
         }
         const message_wrapper_node = document.createElement("div")
